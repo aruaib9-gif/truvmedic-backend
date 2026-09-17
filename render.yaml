@@ -9,7 +9,8 @@ databases:
   - name: truvmedic-db
     databaseName: truvmedic
     user: truvmedic
-    plan: free # Free Postgres instances are deleted after 30 days — upgrade before launch.
+    plan: basic_256mb
+    region: frankfurt
 
 services:
   # ---------------------------------------------------------------------------
@@ -18,9 +19,9 @@ services:
   - type: web
     name: truvmedic-api
     runtime: node
-    plan: free
+    plan: starter
     rootDir: server
-    region: oregon
+    region: frankfurt
     buildCommand: npm ci && npx prisma migrate deploy
     startCommand: npm start
     healthCheckPath: /health
@@ -79,6 +80,7 @@ services:
   - type: web
     name: truvmedic-web
     runtime: static
+    region: frankfurt
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
     pullRequestPreviewsEnabled: false
