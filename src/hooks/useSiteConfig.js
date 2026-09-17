@@ -12,7 +12,7 @@ export const SITE_CONFIG_DEFAULTS = {
   hero_subtitle: "24/7 medical readiness, offshore & industrial healthcare, full regulatory compliance, and technology-driven operations for enterprises that never stop.",
   hero_image_url: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=1600&q=80",
   about_image_url: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=900&q=80",
-  digital_health_image_url: "/__generated_images__/img_7e882126e2fb.png",
+  digital_health_image_url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80",
   industries_offshore_image_url: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&q=80",
   industries_industrial_image_url: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&q=80",
   service_image_outsourcing: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=800&q=80",
@@ -42,6 +42,22 @@ export const SITE_CONFIG_DEFAULTS = {
   careers_whatsapp_enabled: true,
 };
 
+/**
+ * Overlays a stored config onto the defaults, ignoring null/empty fields.
+ *
+ * A SiteConfig row only ever holds the fields an admin has actually filled in;
+ * a plain spread would let those nulls erase perfectly good defaults (logo,
+ * hero copy, stock imagery) and leave the page half-blank.
+ */
+function mergeWithDefaults(stored) {
+  const merged = { ...SITE_CONFIG_DEFAULTS };
+  for (const [key, value] of Object.entries(stored)) {
+    if (value === null || value === undefined || value === "") continue;
+    merged[key] = value;
+  }
+  return merged;
+}
+
 export function useSiteConfig() {
   const queryClient = useQueryClient();
 
@@ -49,7 +65,7 @@ export function useSiteConfig() {
     queryKey: ["site-config"],
     queryFn: async () => {
       const configs = await api.entities.SiteConfig.filter({ key: "main" });
-      return configs.length > 0 ? { ...SITE_CONFIG_DEFAULTS, ...configs[0] } : SITE_CONFIG_DEFAULTS;
+      return configs.length > 0 ? mergeWithDefaults(configs[0]) : SITE_CONFIG_DEFAULTS;
     },
     initialData: SITE_CONFIG_DEFAULTS,
     staleTime: 30 * 1000,

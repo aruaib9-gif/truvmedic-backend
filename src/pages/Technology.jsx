@@ -8,7 +8,7 @@ import {
   Monitor, Activity, FileText, Brain, CheckCircle, Shield, ExternalLink
 } from "lucide-react";
 
-const DASHBOARD_IMAGE = "/__generated_images__/img_7e882126e2fb.png";
+const DASHBOARD_IMAGE = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80";
 
 const platforms = [
   {

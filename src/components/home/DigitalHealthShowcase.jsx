@@ -4,7 +4,7 @@ import SectionHeading from "../shared/SectionHeading";
 import { Monitor, Activity, FileText, Wifi, Smartphone, Brain } from "lucide-react";
 import { useSiteConfig } from "@/hooks/useSiteConfig";
 
-const DEFAULT_DASHBOARD_IMAGE = "/__generated_images__/img_7e882126e2fb.png";
+const DEFAULT_DASHBOARD_IMAGE = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80";
 
 const features = [
   { icon: Activity, title: "Truv BPConnect", desc: "Remote vital signs monitoring and health data aggregation platform" },
