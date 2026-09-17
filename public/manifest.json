@@ -1,0 +1,13 @@
+{
+  "name": "TRUV Medical Services",
+  "short_name": "TRUV Medical",
+  "description": "Integrated occupational healthcare and medical workforce solutions.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A1628",
+  "theme_color": "#0A3272",
+  "icons": [
+    { "src": "/favicon.jpg", "sizes": "512x512", "type": "image/jpeg" },
+    { "src": "/logo.png", "sizes": "any", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,287 @@
+// TRUV Medical Services — application data model.
+// Field names deliberately mirror the JSON shape the React app already consumes
+// (snake_case, `id` / `created_date` / `updated_date`) so no mapping layer is needed.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  recruiter
+  manager
+  viewer
+  applicant
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password_hash String?
+  full_name     String?
+  role          Role     @default(applicant)
+  department    String?
+  phone         String?
+  active        Boolean  @default(true)
+  notes         String?
+  intended_role String?
+  last_login    DateTime?
+  created_date  DateTime @default(now())
+  updated_date  DateTime @updatedAt
+
+  invites Invite[] @relation("InviteCreatedBy")
+
+  @@index([role])
+}
+
+/// Pending invitation / password-reset token. `token_hash` is a SHA-256 digest —
+/// the raw token only ever exists in the emailed link.
+model Invite {
+  id            String    @id @default(cuid())
+  email         String
+  role          Role      @default(viewer)
+  token_hash    String    @unique
+  purpose       String    @default("invite") // "invite" | "reset"
+  expires_at    DateTime
+  accepted_at   DateTime?
+  created_by    User?     @relation("InviteCreatedBy", fields: [created_by_id], references: [id], onDelete: SetNull)
+  created_by_id String?
+  created_date  DateTime  @default(now())
+
+  @@index([email])
+}
+
+model Lead {
+  id                    String   @id @default(cuid())
+  full_name             String
+  email                 String
+  phone                 String?
+  company               String?
+  industry              String?
+  country               String?
+  service_interest      String?
+  employee_count        String?
+  project_type          String?
+  message               String?
+  source                String   @default("website")
+  status                String   @default("new")
+  priority              String   @default("medium")
+  emergency_support     Boolean  @default(false)
+  newsletter_subscribed Boolean  @default(false)
+  created_by            String?
+  created_date          DateTime @default(now())
+  updated_date          DateTime @updatedAt
+
+  @@index([status])
+  @@index([created_date])
+}
+
+model EmergencyRequest {
+  id             String   @id @default(cuid())
+  contact_name   String
+  company        String?
+  phone          String
+  email          String?
+  location       String?
+  emergency_type String
+  description    String?
+  urgency        String   @default("high")
+  status         String   @default("received")
+  created_by     String?
+  created_date   DateTime @default(now())
+  updated_date   DateTime @updatedAt
+
+  @@index([status])
+}
+
+model JobPosting {
+  id                      String   @id @default(cuid())
+  title                   String
+  department              String
+  location                String?
+  type                    String?
+  description             String?
+  requirements            String[] @default([])
+  certifications_required String[] @default([])
+  salary_range            String?
+  active                  Boolean  @default(true)
+  urgent                  Boolean  @default(false)
+  created_by              String?
+  created_date            DateTime @default(now())
+  updated_date            DateTime @updatedAt
+
+  applications JobApplication[]
+
+  @@index([active])
+}
+
+model JobApplication {
+  id                 String   @id @default(cuid())
+  job_id             String
+  job_title          String?
+  full_name          String
+  email              String
+  phone              String?
+  resume_url         String?
+  cover_letter       String?
+  certifications     String[] @default([])
+  /// Map of certification name -> uploaded document URL
+  cert_document_urls Json     @default("{}")
+  /// Map of certification name -> verified boolean
+  cert_verified      Json     @default("{}")
+  years_experience   Float?
+  offshore_certified Boolean  @default(false)
+  available_date     String?
+  status             String   @default("received")
+  recruiter_notes    String?
+  tags               String[] @default([])
+  department         String?
+  created_by         String?
+  created_date       DateTime @default(now())
+  updated_date       DateTime @updatedAt
+
+  job      JobPosting?        @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  messages CandidateMessage[]
+
+  @@index([email])
+  @@index([status])
+  @@index([job_id])
+}
+
+model CandidateMessage {
+  id              String   @id @default(cuid())
+  application_id  String
+  candidate_email String
+  candidate_name  String?
+  job_title       String?
+  direction       String   @default("outbound")
+  subject         String?
+  body            String
+  sent_by         String?
+  email_sent      Boolean  @default(true)
+  message_type    String   @default("general")
+  created_by      String?
+  created_date    DateTime @default(now())
+  updated_date    DateTime @updatedAt
+
+  application JobApplication @relation(fields: [application_id], references: [id], onDelete: Cascade)
+
+  @@index([application_id])
+  @@index([candidate_email])
+}
+
+model InternalMessage {
+  id              String   @id @default(cuid())
+  from_user_id    String?
+  from_user_name  String?
+  from_user_email String?
+  to_user_id      String
+  to_user_name    String?
+  to_user_email   String?
+  subject         String?
+  body            String
+  read            Boolean  @default(false)
+  priority        String   @default("normal")
+  thread_id       String?
+  created_by      String?
+  created_date    DateTime @default(now())
+  updated_date    DateTime @updatedAt
+
+  @@index([to_user_id, read])
+}
+
+model BlogPost {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String?  @unique
+  excerpt        String?
+  content        String
+  cover_image    String?
+  category       String?
+  tags           String[] @default([])
+  author_name    String?
+  author_role    String?
+  published      Boolean  @default(false)
+  published_date String?
+  read_time      Float?
+  created_by     String?
+  created_date   DateTime @default(now())
+  updated_date   DateTime @updatedAt
+
+  @@index([published])
+}
+
+model Testimonial {
+  id           String   @id @default(cuid())
+  client_name  String
+  company      String?
+  role         String?
+  content      String
+  rating       Float?
+  industry     String?
+  featured     Boolean  @default(false)
+  created_by   String?
+  created_date DateTime @default(now())
+  updated_date DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  full_name    String?
+  subscribed   Boolean  @default(true)
+  source       String?
+  created_by   String?
+  created_date DateTime @default(now())
+  updated_date DateTime @updatedAt
+}
+
+model SiteConfig {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  company_name String?
+  tagline      String?
+  logo_url     String?
+  favicon_url  String?
+  hero_title   String?
+  hero_subtitle String?
+  hero_image_url String?
+  about_image_url String?
+  dashboard_image_url String?
+  digital_health_image_url String?
+  industries_offshore_image_url String?
+  industries_industrial_image_url String?
+  service_image_outsourcing String?
+  service_image_offshore String?
+  service_image_clinic String?
+  service_image_telemedicine String?
+  service_image_monitoring String?
+  service_image_emergency String?
+  service_image_occupational String?
+  service_image_equipment String?
+  phone String?
+  email String?
+  address String?
+  emergency_phone String?
+  whatsapp_number String?
+  facebook_url String?
+  twitter_url String?
+  linkedin_url String?
+  instagram_url String?
+  youtube_url String?
+  footer_text String?
+  seo_title String?
+  seo_description String?
+  telemedicine_portal_url String?
+  newsletter_enabled Boolean @default(true)
+  blog_subscription_enabled Boolean @default(true)
+  careers_whatsapp_enabled Boolean @default(true)
+  created_by   String?
+  created_date DateTime @default(now())
+  updated_date DateTime @updatedAt
+}
