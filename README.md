@@ -77,71 +77,56 @@ cd server && API=http://localhost:4000 node scripts/smoke.mjs
 
 ---
 
-## Deploying to Render
+## Deployment
 
-`render.yaml` is a Render Blueprint that provisions all three resources at once.
+The stack is live on Render (workspace `My Workspace`, Frankfurt):
 
-### 1. Push the repository
-
-Render deploys from Git, so the code needs to be on GitHub, GitLab or Bitbucket:
-
-```bash
-git remote add origin git@github.com:<owner>/<repo>.git
-git push -u origin main
-```
-
-### 2. Create the Blueprint
-
-In the Render dashboard: **New → Blueprint**, select the repository, apply.
-This creates:
-
-| Resource | Type | Notes |
+| Resource | URL / ID | Plan |
 | --- | --- | --- |
-| `truvmedic-db` | PostgreSQL | Free plan — **deleted after 30 days**, upgrade before launch |
-| `truvmedic-api` | Web service (Node) | Runs `prisma migrate deploy` on every build |
-| `truvmedic-web` | Static site | SPA rewrite so deep links survive a refresh |
+| Frontend | https://truvmedic-web.onrender.com | static |
+| API | https://truvmedic-api.onrender.com | starter |
+| Database | `truvmedic-db` (`dpg-dalqcbqd0e5s7389n1fg-a`) | basic_256mb |
 
-`DATABASE_URL`, `JWT_SECRET`, `APP_URL`, `CORS_ORIGINS` and `VITE_API_URL` are
-wired automatically between the services.
+`GET /health` on the API reports database connectivity and which integrations
+are configured.
 
-### 3. Add the secrets
+### Creating the first admin
 
-These are marked `sync: false` in the blueprint, so Render prompts for them.
-Set them on **`truvmedic-api` → Environment**:
+`BOOTSTRAP_ADMIN_EMAILS` is set to `tonifili@gmail.com`. Register at
+[/register](https://truvmedic-web.onrender.com/register) with that address and
+the account is created as an admin. Everyone else joins by invitation from
+**Users & Roles** — which needs `RESEND_API_KEY` to actually send the email.
 
-| Variable | Purpose | Without it |
+### Still to configure
+
+These are unset, so the features they back are inactive:
+
+| Variable | Feature | Current behaviour |
 | --- | --- | --- |
-| `BOOTSTRAP_ADMIN_EMAILS` | Comma-separated addresses granted `admin` on first registration | No way to reach the admin portal |
-| `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET` | CV, certificate and image uploads | Uploads return a clear error |
-| `RESEND_API_KEY` | Invites, password resets, candidate emails | Emails are logged, not sent |
-| `ANTHROPIC_API_KEY` | Site chatbot | Chatbot replies with a fallback message |
+| `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET` | CV, certificate and image uploads | **Job applications cannot be submitted** — the CV upload step errors |
+| `RESEND_API_KEY` | Invites, password resets, candidate and interview emails | Messages are logged server-side, never delivered |
+| `ANTHROPIC_API_KEY` | Site chatbot | Replies with a fixed fallback message |
 
-The API starts and serves traffic regardless — each integration degrades on its
-own and reports its status at `GET /health`.
+Set them on **truvmedic-api → Environment** in the Render dashboard, then
+redeploy.
 
-### 4. Create the first admin
+### Deploying changes
 
-Put your address in `BOOTSTRAP_ADMIN_EMAILS`, then register at
-`https://<your-site>.onrender.com/register`. The account is created as an admin.
-Invite the rest of the team from **Users & Roles**.
+The services were created through Render's API, so **no GitHub webhook is
+installed and pushes do not deploy automatically**. Either:
 
-Alternatively, run the seed from the API service's Render shell:
+- connect the repo in the Render dashboard (Settings → Build & Deploy → connect
+  `aruaib9-gif/truvmedic-backend`) to enable auto-deploy, or
+- trigger a deploy manually: **Manual Deploy → Deploy latest commit**.
 
-```bash
-SEED_ADMIN_EMAIL=you@truvmedic.com SEED_ADMIN_PASSWORD='…' npm run seed
-```
+> `render.yaml` describes the same three resources. It is kept in sync as
+> documentation, but the live services were created via the API — applying it as
+> a new Blueprint would create *duplicates* rather than adopt them.
 
-### 5. Post-deploy checks
+### Local setup against a fresh database
 
-```bash
-curl https://truvmedic-api.onrender.com/health
-```
-
-`integrations` in the response shows which providers are configured.
-
-> **Free plan note:** Render spins free web services down after 15 minutes of
-> inactivity, so the first request after an idle period takes ~30 seconds. Use a
-> paid instance for production.
+See "Local development" above; `npx prisma migrate deploy` applies the schema to
+any new environment, and `npm run seed` creates the `SiteConfig` row.
 
 ---
 
